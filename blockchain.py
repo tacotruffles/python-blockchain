@@ -1,4 +1,5 @@
 # Initialize Blockchain
+MINING_REWARD = 10 #coins
 genesis_block = {'previous_hash': '', 'index': 0, 'transactions': []}
 blockchain = [genesis_block]
 open_transactions = []
@@ -9,14 +10,26 @@ def hash_block(block):
     return '-'.join([str(block[key]) for key in block])
 
 def get_balance(participant):
+    # Gather past transactions on the blockchain
     tx_sender = [[tx['amount'] for tx in block['transactions'] if tx['sender'] == participant] for block in blockchain]
+
+    # Including any open transactions that haven't been mined yet
+    open_tx_sender = [tx['amount'] for tx in open_transactions if tx['sender'] == participant] 
+    tx_sender.append(open_tx_sender)
+
+    # Calculate total amount sent by sender
     amount_sent = 0
     for tx in tx_sender:
         if len(tx) > 0:
             amount_sent += tx[0]
     
+    # Gather past transactions received by sender
     tx_recipient = [[tx['amount'] for tx in block['transactions'] if tx['recipient'] == participant] for block in blockchain]
+
+    # Gather any pending coins to be received by sender
+    """ TODO: ???????? """
     
+    # Calculate the total amount received by sender
     amount_received = 0
     for tx in tx_recipient:
         if len(tx) > 0:
@@ -30,6 +43,14 @@ def get_last_blockchain_value():
         return None
     
     return blockchain[-1]
+
+def verify_transaction(transaction):
+    """
+        Make sure sender has enough coins to send for the current transaction
+    """
+    sender_balance = get_balance(transaction['sender'])
+    return sender_balance >= transaction['amount']
+
 
 
 # Add a transaction to the open_transaction list. 
@@ -49,9 +70,13 @@ def add_transaction(recipient, sender=owner, amount=1.0):
         'amount': amount
     }
 
-    open_transactions.append(transaction)
-    participants.add(sender)
-    participants.add(recipient)
+    if verify_transaction(transaction):
+        open_transactions.append(transaction)
+        participants.add(sender)
+        participants.add(recipient)
+        return True
+
+    return False
     
 
     # if last_transaction == None:
@@ -72,6 +97,14 @@ def mine_block():
     '''
     last_block = blockchain[-1]
     hashed_block = hash_block(last_block)
+
+    reward_transaction = {
+        'sender': 'MINING',
+        'recipient': owner,
+        'amount': MINING_REWARD
+    }
+
+    open_transactions.append(reward_transaction)
 
     block = {
         'previous_hash': hashed_block,
@@ -134,7 +167,10 @@ while waiting_for_input:
         # Unpack tx_data Tuple
         recipient, amount = tx_data
 
-        add_transaction(recipient, amount=amount)
+        if add_transaction(recipient, amount=amount):
+            print('Added transaction!')
+        else:
+            print('Transaction failed.')
         print_open_transactions()
     elif user_choice == '2':
         if mine_block():
