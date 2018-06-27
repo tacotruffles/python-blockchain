@@ -1,3 +1,5 @@
+import functools
+
 # Initialize Blockchain
 MINING_REWARD = 10 #coins
 genesis_block = {'previous_hash': '', 'index': 0, 'transactions': []}
@@ -18,10 +20,11 @@ def get_balance(participant):
     tx_sender.append(open_tx_sender)
 
     # Calculate total amount sent by sender
-    amount_sent = 0
-    for tx in tx_sender:
-        if len(tx) > 0:
-            amount_sent += tx[0]
+    amount_sent = functools.reduce(lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0, tx_sender, 0)
+    # amount_sent = 0
+    # for tx in tx_sender:
+    #     if len(tx) > 0:
+    #         amount_sent += tx[0]
     
     # Gather past transactions received by sender
     tx_recipient = [[tx['amount'] for tx in block['transactions'] if tx['recipient'] == participant] for block in blockchain]
@@ -30,10 +33,11 @@ def get_balance(participant):
     """ TODO: ???????? """
     
     # Calculate the total amount received by sender
-    amount_received = 0
-    for tx in tx_recipient:
-        if len(tx) > 0:
-            amount_received += tx[0]
+    amount_received = functools.reduce(lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0, tx_recipient, 0)
+    # amount_received = 0
+    # for tx in tx_recipient:
+    #     if len(tx) > 0:
+    #         amount_received += tx[0]
 
     return amount_received - amount_sent
 
@@ -205,7 +209,7 @@ while waiting_for_input:
         print_blockchain_elements()
         print('Invalid blockchain!')
         break
-    print("SENDER BALANCE: " + str(get_balance('John')))
+    print('SENDER BALANCE {}: {:6.2f}'.format('John', get_balance('John')))
 else:
     print('Done!')
 # end while True
